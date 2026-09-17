@@ -48,6 +48,14 @@ export const OUTILS = {
   // restreint qui en a le plus besoin, puisqu'il ne reste alors que trois
   // outils et qu'un assistant doit deviner le reste.
   clicbase_conventions: "lecture",
+  // --- fichiers d'un site heberge ---
+  // ⚠️ LISTER EST UNE LECTURE, LIRE EST UN SECRET. Le nom et la taille d'un
+  // fichier revelent une structure ; son CONTENU peut porter des identifiants,
+  // dans un config.php ou un settings.js. Meme raisonnement que
+  // get_credentials : il ne modifie rien, et il rend quand meme les clefs de
+  // la maison. Les fichiers caches, eux, sont deja impossibles cote serveur.
+  list_site_files: "lecture",
+  read_site_file: "secret",
 };
 
 /** Ce qu'on garde en lecture seule. */

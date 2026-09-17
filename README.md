@@ -18,6 +18,38 @@ Outils :
 - `enable_realtime` — active le temps réel sur une table.
 - `set_oauth_provider` — configure Google OAuth.
 - `set_email_smtp` — configure un SMTP (sinon SMTP interne Clicbase par défaut).
+- `list_site_files` — liste les fichiers d'un site heberge (nom, taille, date).
+- `read_site_file` — rend le contenu d'UN fichier, en base64 cote API, decode cote outil.
+- `clicbase_conventions` — les regles de la plateforme : policies RLS, droits, PostgREST.
+
+## Les fichiers d'un site
+
+Jusqu'a la 0.2.0, une cle pouvait ECRASER les fichiers d'un site sans pouvoir
+les lire : l'interdit etait pose du mauvais cote, puisque ecrire est
+strictement plus dangereux que lire. La seule issue etait un mot de passe SFTP,
+c'est-a-dire un secret durable colle dans une conversation pour contourner un
+endpoint absent.
+
+```
+list_site_files(site_id)               -> un niveau de la racine publique
+list_site_files(site_id, "assets")     -> on descend
+read_site_file(site_id, "index.html")  -> le contenu, decode
+```
+
+L'id du site vient de `GET /api/v1/admin/sites`.
+
+⚠️ `list_site_files` est une LECTURE, `read_site_file` est un SECRET. Le nom
+d'un fichier revele une structure ; son contenu peut porter des identifiants
+dans un `config.php` ou un `settings.js`. Le second disparait donc du mode
+restreint, comme `get_credentials`.
+
+⚠️ LES FICHIERS CACHES SONT HORS D'ATTEINTE, a tout niveau : `.env` comme
+`assets/.env`. Le serveur refuse tout segment commencant par un point, aussi
+bien au depot qu'a la lecture. Cette garde existait pour empecher qu'ils soient
+SERVIS par le serveur web ; elle protege exactement le bon flanc.
+
+Plafond : 2 Mo cote API, 256 Ko cote outil. Au-dela, le telechargement du
+tableau de bord ou le SFTP.
 
 ## Lecture seule
 

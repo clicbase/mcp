@@ -274,6 +274,63 @@ outils.tool(
   async ({ name, ...cfg }) => { try { return out(await call(name, "/email/config", "POST", cfg)); } catch (e) { return fail(e); } },
 );
 
+// Les fichiers d'un site heberge. `admin` cible l'API d'administration, la ou
+// `call` parle a la base d'un projet : deux surfaces differentes.
+async function admin(chemin, methode = "GET") {
+  const base = API_LECTURE.replace(/\/projects$/, "");
+  const res = await fetch(`${base}${chemin}`, {
+    method: methode,
+    headers: { authorization: `Bearer ${CLE}` },
+  });
+  if (!res.ok) {
+    const e = await lireEchec(res);
+    throw new Error(`Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`);
+  }
+  return res.json();
+}
+
+outils.tool(
+  "list_site_files",
+  "Liste les fichiers d'un site heberge (nom, dossier ou non, taille, date). `dossier` pour descendre d'un niveau. L'id du site vient de GET /sites.",
+  { site_id: z.string(), dossier: z.string().optional() },
+  async ({ site_id, dossier }) => {
+    try {
+      const q = dossier ? `?dossier=${encodeURIComponent(dossier)}` : "";
+      return out(await admin(`/sites/${encodeURIComponent(site_id)}/files${q}`));
+    } catch (e) {
+      return fail(e);
+    }
+  },
+);
+
+outils.tool(
+  "read_site_file",
+  "Rend le contenu d'UN fichier d'un site heberge, en base64. Plafond 2 Mo. Les fichiers caches (.env, .git) sont refuses par le serveur, a tout niveau.",
+  { site_id: z.string(), chemin: z.string() },
+  async ({ site_id, chemin }) => {
+    try {
+      const d = await admin(
+        `/sites/${encodeURIComponent(site_id)}/files?chemin=${encodeURIComponent(chemin)}`,
+      );
+      // ⚠️ ON DECODE ICI, ET ON PLAFONNE PLUS BAS QUE L'API. Rendre du base64 a
+      // un modele lui fait depenser son contexte a le decoder, souvent mal. Et
+      // 2 Mo de source dans une conversation ne servent personne : au-dela de
+      // 256 Ko on refuse en le disant, plutot que de noyer la session.
+      const brut = Buffer.from(String(d.contenu ?? ""), "base64");
+      if (brut.byteLength > 256 * 1024) {
+        return fail(
+          new Error(
+            `Fichier de ${brut.byteLength} octets : trop gros pour une conversation. Telecharge-le par le tableau de bord ou par SFTP.`,
+          ),
+        );
+      }
+      return out({ chemin: d.chemin, octets: d.octets, contenu: brut.toString("utf8") });
+    } catch (e) {
+      return fail(e);
+    }
+  },
+);
+
 // ⚠️ LE MODE RESTREINT S'ANNONCE, SUR LA SORTIE D'ERREUR. Un serveur qui
 // retire des outils en silence se decouvre en pleine session : l'assistant
 // cherche une fonction qui devrait exister, ne la trouve pas, et conclut que le
