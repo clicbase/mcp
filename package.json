@@ -1,8 +1,9 @@
 {
   "name": "@clicbase/mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "bin": {
+    "mcp": "clicbase-mcp.mjs",
     "clicbase-mcp": "clicbase-mcp.mjs",
     "clicbase-db-mcp": "clicbase-db-mcp.mjs"
   },

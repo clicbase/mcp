@@ -47,6 +47,39 @@ une **écriture** : il disparaît du mode restreint au lieu d'y être admis. Un
 oubli coûte alors une fonction manquante, que l'on remarque ; l'inverse aurait
 coûté une écriture ouverte dans un mode qui promet de ne pas écrire.
 
+## ⚠️ La forme de la commande npx
+
+`npx -y @clicbase/mcp` **echouait** en `could not determine executable to run`
+jusqu'a la version 0.1.1 : le paquet porte plusieurs commandes et aucune ne
+s'appelait `mcp`, donc npx ne pouvait pas choisir. Deux formes sont justes :
+
+```bash
+npx -y -p @clicbase/mcp clicbase-mcp       # tout-en-un, marche des 0.1.0
+npx -y -p @clicbase/mcp clicbase-db-mcp    # un seul projet
+npx -y @clicbase/mcp                       # depuis 0.1.1 seulement
+```
+
+`-p` designe le PAQUET a installer, l'argument suivant la COMMANDE a lancer.
+Sans lui, npx cherche une commande portant le dernier segment du nom du paquet.
+
+## Un seul projet : `clicbase-db-mcp`
+
+C'est la variante qu'utilise un client sur sa propre base. Elle ne cree pas de
+projet et ne voit que celui qu'on lui donne :
+
+```bash
+claude mcp add ma-base \
+  -e CLICBASE_DB_URL=https://clicbase.com/db/<slug> \
+  -e CLICBASE_SERVICE_KEY=<cle service> \
+  -e CLICBASE_READ_ONLY=1 \
+  -- npx -y -p @clicbase/mcp clicbase-db-mcp
+```
+
+Les deux valeurs se trouvent dans le tableau de bord Clicbase, **section API du
+projet** (`/dashboard?studio=<id>&section=api`) : « API REST » donne l'URL,
+« Cle service » la cle. Ce n'est PAS une cle `cbk_` : celles-la servent au
+serveur tout-en-un et n'apparaissent que pour qui possede un VPS ou un Docker.
+
 ## Quand l'utiliser
 
 `run_sql` exécute du SQL arbitraire avec les droits du propriétaire de la base,
@@ -69,7 +102,7 @@ En clair :
 claude mcp add clicbase \
   -e CLICBASE_API_KEY=cbk_... \
   -e CLICBASE_READ_ONLY=1 \
-  -- npx -y @clicbase/mcp
+  -- npx -y -p @clicbase/mcp clicbase-mcp
 ```
 
 > ⚠️ `CLICBASE_READ_ONLY=1` est volontairement dans la commande d'installation.
@@ -77,12 +110,14 @@ claude mcp add clicbase \
 > projet et la clé `service`. Retire cette ligne seulement quand tu sais
 > pourquoi, et lis la section « Quand l'utiliser » avant.
 
-### Depuis le dépôt
+### Depuis les sources
 
+⚠️ `cd mcp` ne vaut que dans le monorepo Clicbase. Depuis le depot public, la
+racine EST le paquet : ce README est publie aux deux endroits, et une ligne
+juste d'un cote se trompe de l'autre.
 
 ```bash
-cd mcp
-npm install
+git clone https://github.com/clicbase/mcp && cd mcp && npm install
 ```
 
 ## Configuration dans Claude Code
