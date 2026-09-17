@@ -1,0 +1,43 @@
+{
+  "name": "@clicbase/mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "clicbase-mcp": "./clicbase-mcp.mjs",
+    "clicbase-db-mcp": "./clicbase-db-mcp.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.0"
+  },
+  "description": "Serveur MCP pour Clicbase : provisionner et administrer une base PostgreSQL managee depuis un assistant.",
+  "license": "MIT",
+  "homepage": "https://clicbase.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clicbase/mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/clicbase/mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "clicbase",
+    "postgres",
+    "baas"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "clicbase-mcp.mjs",
+    "clicbase-db-mcp.mjs",
+    "portee.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
