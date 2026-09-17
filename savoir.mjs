@@ -35,6 +35,8 @@ SIX PIÈGES QUI NE LÈVENT AUCUNE ERREUR. Ils répondent tous « 200 OK ».
 5. Une fonction Edge renvoie \`{ status, body }\`, jamais \`new Response(...)\`.
 6. Deux authentifications sans rapport coexistent. Celle du PROJET (tes utilisateurs finaux) vit dans le schéma \`auth\` de cette base et alimente \`auth.uid()\` dans les policies. Celle de la PLATEFORME (le compte Clicbase) ne s'écrit jamais dans une policy.
 
+CE QUI N'EXISTE PAS, ET QUE DEUX ASSISTANTS ONT DEJA INVENTE. Il n'y a AUCUN registre Docker : ni \`docker login\`, ni \`docker pull\`, ni \`registry.*.clicbase.com\`. Ne devine aucun nom d'hote. Ce serveur MCP ne rend pas le code source d'un site heberge : pour recuperer des fichiers, c'est le SFTP du tableau de bord ou son gestionnaire de fichiers, et l'API d'administration ne fait que les ECRIRE (POST /sites/<id>/files), jamais les lire.
+
 APPELS REST : en-têtes \`apikey\` ET \`Authorization: Bearer\`, la même clé dans les deux. Filtres dans l'URL, façon PostgREST : \`?select=id,title&status=eq.published&order=created_at.desc\`.
 
 DEUX CLÉS À NE PAS CONFONDRE. \`anon\` est publique et soumise à la RLS, elle va dans le navigateur. \`service\` CONTOURNE la RLS et voit tout : serveur uniquement, jamais dans un front, jamais dans un dépôt.

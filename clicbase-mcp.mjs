@@ -38,10 +38,112 @@ if (!CLE) {
 const out = (d) => ({ content: [{ type: "text", text: typeof d === "string" ? d : JSON.stringify(d, null, 2) }] });
 const fail = (e) => ({ isError: true, content: [{ type: "text", text: String(e?.message ?? e) }] });
 
+// L'API de LECTURE des projets, derivee de celle de provisioning.
+const API_LECTURE = API.replace(/\/databases\/?$/, "/admin/projects");
+
+/**
+ * Traduit un statut HTTP en phrase utile.
+ *
+ * ⚠️ « Clicbase 403 » NE DIT RIEN, ET ON L'A VU COUTER UNE HEURE. Le
+ * 2026-09-17, une session a lu ce nombre, conclu que la cle etait morte, et
+ * cherche du mauvais cote. Mesure ensuite : la cle etait vivante, jamais
+ * revoquee, et cette route ne peut PAS repondre 403 (400 sans en-tete, 401 cle
+ * refusee, 429 debit, 500 provisioning). Le nombre seul envoie chercher au
+ * hasard.
+ */
+/**
+ * Lit une reponse en echec SANS PERDRE CE QU'ELLE CONTENAIT.
+ *
+ * ⚠️ `res.json().catch(() => ({}))` EFFACE LA PREUVE. Le 2026-09-17, une session
+ * a rapporte « Clicbase 403: {} » sur trois tentatives. Ce `{}` ne voulait pas
+ * dire « corps vide » : il voulait dire « corps ILLISIBLE en JSON », donc pas
+ * notre application, qui rend toujours un champ `error`. L'information qui
+ * aurait tranche en dix secondes, l'en-tete `cf-ray` et les premiers octets du
+ * corps, avait ete jetee par le `catch`.
+ *
+ * On garde donc : le statut, l'origine declaree par le serveur, l'identifiant
+ * Cloudflare s'il existe, et le debut du corps tel quel.
+ */
+async function lireEchec(res) {
+  const brut = await res.text().catch(() => "");
+  let json = null;
+  try {
+    json = JSON.parse(brut);
+  } catch {
+    /* pas du JSON : c'est precisement ce qu'on veut savoir */
+  }
+  const via = res.headers.get("cf-ray")
+    ? `Cloudflare (cf-ray ${res.headers.get("cf-ray")})`
+    : (res.headers.get("server") ?? "origine inconnue");
+  return {
+    json,
+    // ⚠️ UN CORPS NON-JSON EST LA SIGNATURE D'UN REFUS EN AMONT. On le dit en
+    // clair au lieu de rendre un objet vide qui ressemble a une reponse.
+    detail: json
+      ? JSON.stringify(json)
+      : brut.trim()
+        ? `reponse NON-JSON de ${via} : ${brut.replace(/\s+/g, " ").slice(0, 180)}`
+        : `corps vide, servi par ${via} — la requete n'a probablement pas atteint Clicbase.`,
+  };
+}
+
+function expliquer(statut) {
+  if (statut === 400) return "requete incomplete : le champ `name` est obligatoire.";
+  if (statut === 401)
+    return "cle refusee : invalide, expiree ou revoquee. Attention, le bouton « Rouler » du tableau de bord REMPLACE le secret : l'ancien meurt aussitot.";
+  if (statut === 403)
+    return "hors du perimetre de cette cle. Une cle de Docker ne voit que son Docker. Verifie sa portee sur /api/v1/admin/me.";
+  if (statut === 429) return "trop de requetes, attends une minute.";
+  if (statut === 500)
+    return "la plateforme a refuse l'operation. Les creations de projet sont actuellement fermees : un projet qui n'existe pas deja ne peut pas etre cree.";
+  return "reponse inattendue.";
+}
+
+/**
+ * Trouve un projet SANS RIEN CREER.
+ *
+ * ⚠️ IL ACCEPTE LE NOM **OU** LE SLUG, et c'est le coeur du correctif. Le
+ * projet « présidence » a pour slug `presidence` : un assistant qui tape le
+ * slug, ou qui perd l'accent en chemin, ne trouvait rien. Ici on cherche dans
+ * les deux, puis on rend le nom EXACT tel qu'il est en base.
+ */
+async function trouver(name) {
+  const res = await fetch(API_LECTURE, {
+    headers: { authorization: `Bearer ${CLE}` },
+  });
+  if (!res.ok) {
+    const e = await lireEchec(res);
+    throw new Error(`Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`);
+  }
+  const data = await res.json().catch(() => ({}));
+  const liste = Array.isArray(data.projects) ? data.projects : [];
+  const cible = String(name).trim().toLowerCase();
+  const p =
+    liste.find((x) => String(x.name ?? "").toLowerCase() === cible) ??
+    liste.find((x) => String(x.slug ?? "").toLowerCase() === cible);
+  if (!p) {
+    const noms = liste.map((x) => x.slug ?? x.name).filter(Boolean).join(", ");
+    throw new Error(
+      `Aucun projet « ${name} » dans le perimetre de cette cle.` +
+        (noms ? ` Projets visibles : ${noms}.` : " Cette cle ne voit aucun projet."),
+    );
+  }
+  return p;
+}
+
 // Provisionne (ou récupère, idempotent) un projet et renvoie ses infos.
+//
+// ⚠️ `creer: false` POUR TOUT OUTIL DE LECTURE. Cet appel est un POST sur
+// l'endpoint de provisioning : idempotent quand le projet existe, CREATEUR
+// sinon. `list_tables` survit au mode lecture seule et passait par ici : la
+// promesse « aucune ecriture » etait donc fausse au niveau du transport, pendant
+// que `create_database` disparaissait de la liste des outils. On verifie
+// l'existence par une LECTURE d'abord, et on ne poste qu'un nom deja connu.
 const cache = new Map();
-async function resolve(name, domain) {
+async function resolve(name, domain, { creer = true } = {}) {
   if (cache.has(name)) return cache.get(name);
+  let nomExact = name;
+  if (!creer) nomExact = (await trouver(name)).name ?? name;
   const res = await fetch(API, {
     method: "POST",
     headers: {
@@ -49,10 +151,13 @@ async function resolve(name, domain) {
       // ⚠️ UNE CLE, PAS UN MOT DE PASSE. Voir l'en-tete du fichier.
       authorization: `Bearer ${CLE}`,
     },
-    body: JSON.stringify({ name, domain }),
+    body: JSON.stringify({ name: nomExact, domain }),
   });
+  if (!res.ok) {
+    const e = await lireEchec(res);
+    throw new Error(`Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`);
+  }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(`Clicbase ${res.status}: ${JSON.stringify(data)}`);
   const info = {
     url: data.restApi?.url,
     anonKey: data.restApi?.anonKey,
@@ -65,8 +170,8 @@ async function resolve(name, domain) {
 }
 
 // Appel d'un endpoint du projet avec la clé service.
-async function call(name, path, method = "POST", body) {
-  const p = await resolve(name);
+async function call(name, path, method = "POST", body, opts) {
+  const p = await resolve(name, undefined, opts);
   if (!p.url || !p.serviceKey) throw new Error("Projet non résolu (clés manquantes).");
   const res = await fetch(`${p.url}${path}`, {
     method,
@@ -129,7 +234,20 @@ outils.tool(
   "Liste les tables du schéma public d'un projet.",
   { name: z.string() },
   async ({ name }) => {
-    try { return out(await call(name, "/sql", "POST", { query: "select table_name from information_schema.tables where table_schema='public' order by table_name" })); } catch (e) { return fail(e); }
+    try {
+      // ⚠️ `creer: false` : un outil de lecture ne provisionne jamais.
+      return out(
+        await call(
+          name,
+          "/sql",
+          "POST",
+          { query: "select table_name from information_schema.tables where table_schema='public' order by table_name" },
+          { creer: false },
+        ),
+      );
+    } catch (e) {
+      return fail(e);
+    }
   },
 );
 
