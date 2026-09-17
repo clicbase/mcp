@@ -80,6 +80,33 @@ projet** (`/dashboard?studio=<id>&section=api`) : « API REST » donne l'URL,
 « Cle service » la cle. Ce n'est PAS une cle `cbk_` : celles-la servent au
 serveur tout-en-un et n'apparaissent que pour qui possede un VPS ou un Docker.
 
+## Ce que l'assistant sait avant son premier appel
+
+Un serveur MCP qui n'expose que des outils laisse le modele deviner les
+conventions de la plateforme. Depuis la 0.1.2, celui-ci remplit le champ
+`instructions` du protocole : le client le pose dans le contexte du modele A LA
+CONNEXION, avant tout appel. On ne peut donc pas oublier de le lire.
+
+Six pieges y sont enumeres, et ils ont en commun de repondre **200 OK** :
+
+1. `with check` n'est pas `using`. Sur INSERT et UPDATE, PostgreSQL n'evalue
+   QUE `with check`.
+2. Chaque nouvelle table accorde le CRUD a `authenticated` : un `grant select`
+   ne restreint rien, il faut `revoke`.
+3. Toute DDL se termine par `notify pgrst, 'reload schema';`.
+4. `service_role` a besoin de `BYPASSRLS`, sinon 200 OK et un tableau vide.
+5. Une fonction Edge rend `{ status, body }`, jamais `new Response(...)`.
+6. L'auth du PROJET (schema `auth` de la base, `auth.uid()`) ne se confond pas
+   avec celle de la PLATEFORME.
+
+L'outil `clicbase_conventions` en rend le detail a la demande : formes exactes
+des policies, ordre `revoke` puis `grant`, operateurs PostgREST. Il est classe
+en LECTURE, donc il survit au mode restreint · c'est ce mode qui en a le plus
+besoin, puisqu'il ne laisse que trois autres outils.
+
+Le texte vit dans `savoir.mjs`, sans aucun import, pour rester chargeable par
+les tests du depot.
+
 ## Quand l'utiliser
 
 `run_sql` exécute du SQL arbitraire avec les droits du propriétaire de la base,

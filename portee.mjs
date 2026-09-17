@@ -43,6 +43,11 @@ export const OUTILS = {
   enable_rls: "ecriture",
   create_policy: "ecriture",
   get_oauth_provider: "lecture",
+  // ⚠️ RENDU EN LECTURE SEULE, ET C'EST TOUT L'INTERET. Cet outil ne rend que
+  // du texte : les conventions de la plateforme. C'est precisement le mode
+  // restreint qui en a le plus besoin, puisqu'il ne reste alors que trois
+  // outils et qu'un assistant doit deviner le reste.
+  clicbase_conventions: "lecture",
 };
 
 /** Ce qu'on garde en lecture seule. */

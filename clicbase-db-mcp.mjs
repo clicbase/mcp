@@ -12,6 +12,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { filtre, lectureSeule } from "./portee.mjs";
+import { CONVENTIONS, INSTRUCTIONS } from "./savoir.mjs";
 
 const BASE = process.env.CLICBASE_DB_URL ?? process.env.ROROUIRA_DB_URL;
 const KEY = process.env.CLICBASE_SERVICE_KEY ?? process.env.ROROUIRA_SERVICE_KEY;
@@ -51,13 +52,28 @@ async function api(path, method = "GET", body) {
 const out = (d) => ({ content: [{ type: "text", text: JSON.stringify(d, null, 2) }] });
 const fail = (e) => ({ isError: true, content: [{ type: "text", text: String(e?.message ?? e) }] });
 
-const server = new McpServer({ name: "clicbase-db", version: "1.0.0" });
+// ⚠️ `instructions` EST LU A LA CONNEXION, AVANT LE PREMIER APPEL. C'est le
+// seul endroit qu'un assistant ne peut pas oublier de consulter : le client
+// MCP le pose dans le contexte du modele. Sans lui, un assistant recevait
+// TROIS outils et trente mots de description, puis devinait les conventions
+// de la plateforme. Voir savoir.mjs.
+const server = new McpServer(
+  { name: "clicbase-db", version: "1.0.0" },
+  { instructions: INSTRUCTIONS },
+);
 
 // ⚠️ EN LECTURE SEULE, LES OUTILS QUI ECRIVENT NE SONT PAS ENREGISTRES. Voir
 // portee.mjs : un outil absent n'est jamais demande, un outil present qui
 // refuse invite a insister. `outils.tool(...)` remplace l'appel direct.
 const SEULEMENT_LECTURE = lectureSeule();
 const outils = filtre(server, SEULEMENT_LECTURE);
+
+outils.tool(
+  "clicbase_conventions",
+  "Les conventions Clicbase : formes exactes des policies RLS, droits par defaut, rechargement du schema, appels REST, fonctions Edge. A lire AVANT d'ecrire du SQL ou une policy.",
+  {},
+  async () => ({ content: [{ type: "text", text: CONVENTIONS }] }),
+);
 
 outils.tool(
   "run_sql",
