@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "clicbase-mcp": "./clicbase-mcp.mjs",
-    "clicbase-db-mcp": "./clicbase-db-mcp.mjs"
+    "clicbase-mcp": "clicbase-mcp.mjs",
+    "clicbase-db-mcp": "clicbase-db-mcp.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
