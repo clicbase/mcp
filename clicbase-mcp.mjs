@@ -75,10 +75,19 @@ async function lireEchec(res) {
   const via = res.headers.get("cf-ray")
     ? `Cloudflare (cf-ray ${res.headers.get("cf-ray")})`
     : (res.headers.get("server") ?? "origine inconnue");
+  // ⚠️ UN CORPS NON-JSON INTERDIT D'EXPLIQUER LE STATUT. `expliquer(403)` dit
+  // « hors du perimetre de cette cle » : c'est ce que NOTRE 403 signifie, et
+  // cette reponse ne vient pas de nous. Le 2026-09-18 une session a lu
+  // « hors du perimetre » alors que son bac a sable bloquait la sortie reseau
+  // vers clicbase.com — le vrai motif etait dans le corps, sous une phrase qui
+  // le contredisait. Affirmer une cause qu'on ne connait pas est exactement le
+  // defaut que ce fichier corrige ailleurs.
   return {
     json,
     // ⚠️ UN CORPS NON-JSON EST LA SIGNATURE D'UN REFUS EN AMONT. On le dit en
     // clair au lieu de rendre un objet vide qui ressemble a une reponse.
+    // Vrai seulement quand la reponse vient bien de l'application.
+    denotre: json !== null,
     detail: json
       ? JSON.stringify(json)
       : brut.trim()
@@ -113,7 +122,11 @@ async function trouver(name) {
   });
   if (!res.ok) {
     const e = await lireEchec(res);
-    throw new Error(`Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`);
+    throw new Error(
+      e.denotre
+        ? `Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`
+        : `Clicbase ${res.status} — ${e.detail}`,
+    );
   }
   const data = await res.json().catch(() => ({}));
   const liste = Array.isArray(data.projects) ? data.projects : [];
@@ -155,7 +168,11 @@ async function resolve(name, domain, { creer = true } = {}) {
   });
   if (!res.ok) {
     const e = await lireEchec(res);
-    throw new Error(`Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`);
+    throw new Error(
+      e.denotre
+        ? `Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`
+        : `Clicbase ${res.status} — ${e.detail}`,
+    );
   }
   const data = await res.json().catch(() => ({}));
   const info = {
@@ -284,7 +301,11 @@ async function admin(chemin, methode = "GET") {
   });
   if (!res.ok) {
     const e = await lireEchec(res);
-    throw new Error(`Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`);
+    throw new Error(
+      e.denotre
+        ? `Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`
+        : `Clicbase ${res.status} — ${e.detail}`,
+    );
   }
   return res.json();
 }
