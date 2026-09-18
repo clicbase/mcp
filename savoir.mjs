@@ -28,22 +28,24 @@
 export const INSTRUCTIONS = `Tu es connecté à un projet Clicbase : une base PostgreSQL managée, exposée en API REST par PostgREST.
 
 SIX PIÈGES QUI NE LÈVENT AUCUNE ERREUR. Ils répondent tous « 200 OK ».
-1. \`with check\` n'est PAS \`using\`. Sur INSERT et UPDATE, PostgreSQL n'évalue QUE \`with check\`. Une policy qui n'a qu'un \`using\` ne protège pas l'écriture.
-2. Chaque nouvelle table accorde le CRUD à \`authenticated\` par défaut. Un \`grant select\` ne restreint RIEN : il faut \`revoke\`.
-3. Après tout changement de schéma, termine par \`notify pgrst, 'reload schema';\` sinon l'API continue de servir l'ancien schéma.
-4. Le rôle \`service_role\` a besoin de \`BYPASSRLS\`. Sans lui : 200 OK et un tableau vide, sans explication.
-5. Une fonction Edge renvoie \`{ status, body }\`, jamais \`new Response(...)\`.
-6. Deux authentifications sans rapport coexistent. Celle du PROJET (tes utilisateurs finaux) vit dans le schéma \`auth\` de cette base et alimente \`auth.uid()\` dans les policies. Celle de la PLATEFORME (le compte Clicbase) ne s'écrit jamais dans une policy.
+1. \`with check\` n'est PAS \`using\`. Sur INSERT et UPDATE, PostgreSQL n'evalue QUE \`with check\` : une policy sans lui ne protege pas l'ecriture.
+2. Chaque nouvelle table ouvre le CRUD a \`authenticated\`. Un \`grant select\` ne restreint RIEN : il faut \`revoke\`.
+3. Toute DDL se termine par \`notify pgrst, 'reload schema';\`, sinon l'API sert l'ancien schema.
+4. \`service_role\` exige \`BYPASSRLS\`. Sans lui : 200 OK et un tableau vide.
+5. Une fonction Edge rend \`{ status, body }\`, jamais \`new Response(...)\`.
+6. Deux auth sans rapport coexistent. Celle du PROJET (tes utilisateurs finaux) vit dans le schema \`auth\` de cette base et alimente \`auth.uid()\` dans les policies ; celle de la PLATEFORME ne s'ecrit jamais dans une policy.
 
 CE QUI N'EXISTE PAS, ET QUE DES ASSISTANTS ONT DEJA INVENTE. Aucun registre Docker : ni \`docker login\`, ni \`docker pull\`, ni \`registry.*.clicbase.com\`. Ne devine aucun nom d'hote.
 
 COMMENCE PAR \`list_sites\`. Le \`site_id\` des autres outils est un identifiant technique : ni le domaine, ni le slug.
 
-FICHIERS D'UN SITE : \`list_site_files\` et \`read_site_file\` pour lire, POST /sites/<id>/files pour ecrire. Les fichiers caches sont refuses a tout niveau, \`.env\` compris. Ne reclame JAMAIS le mot de passe SFTP principal : c'est l'identite du site, elle ouvre tout et ne se revoque pas. \`create_sftp_account\` fabrique un compte DEDIE, a supprimer des que tu as fini.
+FICHIERS D'UN SITE : \`list_site_files\` et \`read_site_file\` pour lire, POST /sites/<id>/files pour ecrire. Les fichiers caches sont refuses partout, \`.env\` compris. Ne reclame JAMAIS le mot de passe SFTP principal ni des identifiants HTTP : \`create_sftp_account\` fabrique un compte DEDIE, a supprimer des que tu as fini.
 
 APPELS REST : en-têtes \`apikey\` ET \`Authorization: Bearer\`, la même clé dans les deux. Filtres dans l'URL, façon PostgREST : \`?select=id,title&status=eq.published&order=created_at.desc\`.
 
 DEUX CLÉS À NE PAS CONFONDRE. \`anon\` est publique et soumise à la RLS, elle va dans le navigateur. \`service\` CONTOURNE la RLS et voit tout : serveur uniquement, jamais dans un front, jamais dans un dépôt.
+
+UN OUTIL QUI MANQUE N'EST PAS UNE CAPACITE ABSENTE. En lecture seule, ceux qui ecrivent ou rendent un secret sont RETIRES de ta liste, pas refuses : \`run_sql\`, \`get_credentials\`, \`read_site_file\`, \`create_sftp_account\` et d'autres. Tu ne les vois pas, ILS EXISTENT. N'en conclus pas que le produit ne sait pas le faire et n'attends pas une version future : demande a ton utilisateur de retirer \`CLICBASE_READ_ONLY=1\` le temps de l'operation.
 
 Appelle \`clicbase_conventions\` avant d'écrire du SQL ou une policy : tu y trouveras les formes exactes.`;
 
