@@ -125,7 +125,13 @@ async function trouver(name) {
     throw new Error(
       e.denotre
         ? `Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`
-        : `Clicbase ${res.status} — ${e.detail}`,
+        : // ⚠️ PAS DE PREFIXE « Clicbase » QUAND LA REPONSE N'EST PAS LA NOTRE.
+          // Signale par la session cliente presidence le 2026-09-18, et elle a
+          // raison : « Clicbase 403 » attribue a la plateforme un refus emis
+          // par un proxy intermediaire. J'avais retire l'EXPLICATION du statut
+          // la veille en laissant le PREFIXE, donc le mensonge principal.
+          // Corriger a moitie une attribution fausse, c'est la laisser.
+          `Refus intercepte AVANT Clicbase (HTTP ${res.status}) — ${e.detail}`,
     );
   }
   const data = await res.json().catch(() => ({}));
@@ -171,7 +177,13 @@ async function resolve(name, domain, { creer = true } = {}) {
     throw new Error(
       e.denotre
         ? `Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`
-        : `Clicbase ${res.status} — ${e.detail}`,
+        : // ⚠️ PAS DE PREFIXE « Clicbase » QUAND LA REPONSE N'EST PAS LA NOTRE.
+          // Signale par la session cliente presidence le 2026-09-18, et elle a
+          // raison : « Clicbase 403 » attribue a la plateforme un refus emis
+          // par un proxy intermediaire. J'avais retire l'EXPLICATION du statut
+          // la veille en laissant le PREFIXE, donc le mensonge principal.
+          // Corriger a moitie une attribution fausse, c'est la laisser.
+          `Refus intercepte AVANT Clicbase (HTTP ${res.status}) — ${e.detail}`,
     );
   }
   const data = await res.json().catch(() => ({}));
@@ -304,7 +316,13 @@ async function admin(chemin, methode = "GET") {
     throw new Error(
       e.denotre
         ? `Clicbase ${res.status} — ${expliquer(res.status)} ${e.detail}`
-        : `Clicbase ${res.status} — ${e.detail}`,
+        : // ⚠️ PAS DE PREFIXE « Clicbase » QUAND LA REPONSE N'EST PAS LA NOTRE.
+          // Signale par la session cliente presidence le 2026-09-18, et elle a
+          // raison : « Clicbase 403 » attribue a la plateforme un refus emis
+          // par un proxy intermediaire. J'avais retire l'EXPLICATION du statut
+          // la veille en laissant le PREFIXE, donc le mensonge principal.
+          // Corriger a moitie une attribution fausse, c'est la laisser.
+          `Refus intercepte AVANT Clicbase (HTTP ${res.status}) — ${e.detail}`,
     );
   }
   return res.json();
