@@ -331,6 +331,50 @@ outils.tool(
   },
 );
 
+outils.tool(
+  "list_sftp_accounts",
+  "Liste les comptes SFTP DEDIES d'un site (identifiants et dates, jamais les mots de passe). L'id du site vient de GET /sites.",
+  { site_id: z.string() },
+  async ({ site_id }) => {
+    try {
+      return out(await admin(`/sites/${encodeURIComponent(site_id)}/sftp`));
+    } catch (e) {
+      return fail(e);
+    }
+  },
+);
+
+outils.tool(
+  "create_sftp_account",
+  "Cree un compte SFTP DEDIE sur un site et rend host, port, identifiant et mot de passe UNE SEULE FOIS. Ce n'est jamais le compte principal du site. Supprime-le quand tu as fini. Plafond : 5 comptes par site.",
+  { site_id: z.string() },
+  async ({ site_id }) => {
+    try {
+      return out(await admin(`/sites/${encodeURIComponent(site_id)}/sftp`, "POST"));
+    } catch (e) {
+      return fail(e);
+    }
+  },
+);
+
+outils.tool(
+  "delete_sftp_account",
+  "Supprime un compte SFTP dedie, par son identifiant. A faire des que le transfert est termine : un compte oublie reste un acces ouvert.",
+  { site_id: z.string(), username: z.string() },
+  async ({ site_id, username }) => {
+    try {
+      return out(
+        await admin(
+          `/sites/${encodeURIComponent(site_id)}/sftp?username=${encodeURIComponent(username)}`,
+          "DELETE",
+        ),
+      );
+    } catch (e) {
+      return fail(e);
+    }
+  },
+);
+
 // ⚠️ LE MODE RESTREINT S'ANNONCE, SUR LA SORTIE D'ERREUR. Un serveur qui
 // retire des outils en silence se decouvre en pleine session : l'assistant
 // cherche une fonction qui devrait exister, ne la trouve pas, et conclut que le

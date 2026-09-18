@@ -56,6 +56,14 @@ export const OUTILS = {
   // la maison. Les fichiers caches, eux, sont deja impossibles cote serveur.
   list_site_files: "lecture",
   read_site_file: "secret",
+  // --- comptes SFTP dedies ---
+  // ⚠️ CREER REND UN MOT DE PASSE, DONC C'EST UN SECRET. L'outil ne modifie
+  // pas de donnees, mais il rend de quoi ouvrir tout le dossier du site : meme
+  // raisonnement que get_credentials. Lister ne rend que des noms, supprimer
+  // ne rend rien mais ecrit.
+  list_sftp_accounts: "lecture",
+  create_sftp_account: "secret",
+  delete_sftp_account: "ecriture",
 };
 
 /** Ce qu'on garde en lecture seule. */

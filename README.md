@@ -21,6 +21,9 @@ Outils :
 - `list_site_files` — liste les fichiers d'un site heberge (nom, taille, date).
 - `read_site_file` — rend le contenu d'UN fichier, en base64 cote API, decode cote outil.
 - `clicbase_conventions` — les regles de la plateforme : policies RLS, droits, PostgREST.
+- `list_sftp_accounts` — les comptes SFTP dedies d'un site (noms, jamais de mot de passe).
+- `create_sftp_account` — cree un compte SFTP DEDIE, rend ses identifiants une seule fois.
+- `delete_sftp_account` — le supprime.
 
 ## Les fichiers d'un site
 
@@ -50,6 +53,34 @@ SERVIS par le serveur web ; elle protege exactement le bon flanc.
 
 Plafond : 2 Mo cote API, 256 Ko cote outil. Au-dela, le telechargement du
 tableau de bord ou le SFTP.
+
+## Le SFTP, sans donner le mot de passe du site
+
+`ftpUsername` est l'IDENTITE d'un site : il ouvre tout le dossier, ne se scope
+pas, n'expire pas, ne laisse aucune trace distinguable, et ne se revoque qu'en
+le changeant partout ou il a ete colle. Le confier a un assistant, c'est lui
+donner le site.
+
+`create_sftp_account` fabrique un compte ADDITIONNEL sur le meme dossier, rend
+host, port, identifiant et mot de passe UNE SEULE FOIS, et
+`delete_sftp_account` le retire. Preter un badge, pas sa cle.
+
+```
+list_sftp_accounts(site_id)                 -> les comptes dedies existants
+create_sftp_account(site_id)                -> host, port, user, password
+delete_sftp_account(site_id, username)      -> on referme
+```
+
+⚠️ `create_sftp_account` est classe SECRET : il ne modifie aucune donnee et
+rend pourtant de quoi ouvrir tout le dossier. Il disparait donc du mode
+restreint, comme `get_credentials` et `read_site_file`.
+
+⚠️ PLAFOND DE CINQ COMPTES PAR SITE, et cinq creations par tranche de cinq
+minutes. Chaque compte est un utilisateur systeme reel : un agent qui reprend
+sur erreur en recreant au lieu de reutiliser en fabriquerait des dizaines.
+
+Pour une simple consultation, `list_site_files` et `read_site_file` suffisent
+et ne creent rien.
 
 ## Lecture seule
 
