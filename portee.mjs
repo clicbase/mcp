@@ -48,6 +48,14 @@ export const OUTILS = {
   // restreint qui en a le plus besoin, puisqu'il ne reste alors que trois
   // outils et qu'un assistant doit deviner le reste.
   clicbase_conventions: "lecture",
+  // --- de quoi savoir sur quoi agir ---
+  // ⚠️ SANS EUX, LES OUTILS QUI PRENNENT UN `site_id` SONT INUTILISABLES. Le
+  // 2026-09-18, un assistant a essaye le domaine puis le slug, recolte deux
+  // 404, et fini par demander l'identifiant a son utilisateur. L'API le
+  // publiait depuis toujours ; c'est l'outil qui manquait. Livrer une action
+  // sans le moyen de decouvrir sa cible, c'est livrer une porte sans poignee.
+  list_sites: "lecture",
+  list_projects: "lecture",
   // --- fichiers d'un site heberge ---
   // ⚠️ LISTER EST UNE LECTURE, LIRE EST UN SECRET. Le nom et la taille d'un
   // fichier revelent une structure ; son CONTENU peut porter des identifiants,

@@ -290,6 +290,32 @@ async function admin(chemin, methode = "GET") {
 }
 
 outils.tool(
+  "list_sites",
+  "Liste les sites heberges visibles par cette cle : identifiant, slug, domaine, mode de deploiement. C'est ICI qu'on prend le `site_id` des autres outils : ce n'est ni le domaine ni le slug.",
+  {},
+  async () => {
+    try {
+      return out(await admin("/sites"));
+    } catch (e) {
+      return fail(e);
+    }
+  },
+);
+
+outils.tool(
+  "list_projects",
+  "Liste les projets (bases) visibles par cette cle : identifiant, nom, slug. Utile pour savoir sur quoi on peut agir avant de nommer quoi que ce soit.",
+  {},
+  async () => {
+    try {
+      return out(await admin("/projects"));
+    } catch (e) {
+      return fail(e);
+    }
+  },
+);
+
+outils.tool(
   "list_site_files",
   "Liste les fichiers d'un site heberge (nom, dossier ou non, taille, date). `dossier` pour descendre d'un niveau. L'id du site vient de GET /sites.",
   { site_id: z.string(), dossier: z.string().optional() },

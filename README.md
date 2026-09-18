@@ -18,6 +18,8 @@ Outils :
 - `enable_realtime` — active le temps réel sur une table.
 - `set_oauth_provider` — configure Google OAuth.
 - `set_email_smtp` — configure un SMTP (sinon SMTP interne Clicbase par défaut).
+- `list_sites` — les sites heberges : c'est ICI qu'on prend le `site_id`.
+- `list_projects` — les projets (bases) visibles par la cle.
 - `list_site_files` — liste les fichiers d'un site heberge (nom, taille, date).
 - `read_site_file` — rend le contenu d'UN fichier, en base64 cote API, decode cote outil.
 - `clicbase_conventions` — les regles de la plateforme : policies RLS, droits, PostgREST.
